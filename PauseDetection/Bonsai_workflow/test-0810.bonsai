@@ -1,0 +1,1127 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<WorkflowBuilder Version="2.7.3"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                 xmlns:cv="clr-namespace:Bonsai.Vision;assembly=Bonsai.Vision"
+                 xmlns:rx="clr-namespace:Bonsai.Reactive;assembly=Bonsai.Core"
+                 xmlns:dlc="clr-namespace:Bonsai.DeepLabCut;assembly=Bonsai.DeepLabCut"
+                 xmlns:io="clr-namespace:Bonsai.IO;assembly=Bonsai.System"
+                 xmlns:scr="clr-namespace:Bonsai.Scripting.Expressions;assembly=Bonsai.Scripting.Expressions"
+                 xmlns:ard="clr-namespace:Bonsai.Arduino;assembly=Bonsai.Arduino"
+                 xmlns="https://bonsai-rx.org/2018/workflow">
+  <Workflow>
+    <Nodes>
+      <Expression xsi:type="Combinator">
+        <Combinator xsi:type="cv:CameraCapture">
+          <cv:Index>0</cv:Index>
+          <cv:CaptureProperties>
+            <cv:CapturePropertyAssignment>
+              <cv:Property>Exposure</cv:Property>
+              <cv:Value>-5</cv:Value>
+            </cv:CapturePropertyAssignment>
+            <cv:CapturePropertyAssignment>
+              <cv:Property>Gain</cv:Property>
+              <cv:Value>5000</cv:Value>
+            </cv:CapturePropertyAssignment>
+            <cv:CapturePropertyAssignment>
+              <cv:Property>Contrast</cv:Property>
+              <cv:Value>-3</cv:Value>
+            </cv:CapturePropertyAssignment>
+          </cv:CaptureProperties>
+        </Combinator>
+      </Expression>
+      <Expression xsi:type="Disable">
+        <Builder xsi:type="Combinator">
+          <Combinator xsi:type="cv:Crop">
+            <cv:RegionOfInterest>
+              <cv:X>0</cv:X>
+              <cv:Y>0</cv:Y>
+              <cv:Width>500</cv:Width>
+              <cv:Height>480</cv:Height>
+            </cv:RegionOfInterest>
+          </Combinator>
+        </Builder>
+      </Expression>
+      <Expression xsi:type="rx:PublishSubject">
+        <Name>Video</Name>
+      </Expression>
+      <Expression xsi:type="Disable">
+        <Builder xsi:type="Combinator">
+          <Combinator xsi:type="cv:Grayscale" />
+        </Builder>
+      </Expression>
+      <Expression xsi:type="Combinator">
+        <Combinator xsi:type="dlc:PredictPose">
+          <dlc:ModelFileName>exported-models\snapshot-1000000.pb</dlc:ModelFileName>
+          <dlc:PoseConfigFileName>exported-models\pose_cfg.yaml</dlc:PoseConfigFileName>
+          <dlc:MinConfidence>0</dlc:MinConfidence>
+          <dlc:ScaleFactor xsi:nil="true" />
+          <dlc:ColorConversion>Bgr2Rgb</dlc:ColorConversion>
+        </Combinator>
+      </Expression>
+      <Expression xsi:type="Combinator">
+        <Combinator xsi:type="dlc:ConfidenceThreshold">
+          <dlc:MinConfidence>0.9</dlc:MinConfidence>
+        </Combinator>
+      </Expression>
+      <Expression xsi:type="GroupWorkflow">
+        <Name>HEAD</Name>
+        <Workflow>
+          <Nodes>
+            <Expression xsi:type="WorkflowInput">
+              <Name>Source1</Name>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="dlc:GetBodyPart">
+                <dlc:Name>Head</dlc:Name>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="MemberSelector">
+              <Selector>Position.X,Position.Y</Selector>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Timestamp" />
+            </Expression>
+            <Expression xsi:type="io:CsvWriter">
+              <io:FileName>savefiles\DLC-original_head.csv</io:FileName>
+              <io:Append>false</io:Append>
+              <io:Overwrite>true</io:Overwrite>
+              <io:Suffix>Timestamp</io:Suffix>
+              <io:IncludeHeader>true</io:IncludeHeader>
+            </Expression>
+            <Expression xsi:type="MemberSelector">
+              <Selector>Position.X,Position.Y</Selector>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>1</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2))/11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>3</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2)) /11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>5</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2)) /11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="Add" />
+            <Expression xsi:type="GreaterThan">
+              <Operand xsi:type="IntProperty">
+                <Value>2</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="WorkflowOutput" />
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Timestamp" />
+            </Expression>
+            <Expression xsi:type="io:CsvWriter">
+              <io:FileName>savefiles\DsitanceMoved_head.csv</io:FileName>
+              <io:Append>false</io:Append>
+              <io:Overwrite>true</io:Overwrite>
+              <io:Suffix>Timestamp</io:Suffix>
+              <io:IncludeHeader>true</io:IncludeHeader>
+            </Expression>
+          </Nodes>
+          <Edges>
+            <Edge From="0" To="1" Label="Source1" />
+            <Edge From="1" To="2" Label="Source1" />
+            <Edge From="1" To="5" Label="Source1" />
+            <Edge From="2" To="3" Label="Source1" />
+            <Edge From="3" To="4" Label="Source1" />
+            <Edge From="5" To="6" Label="Source1" />
+            <Edge From="5" To="7" Label="Source1" />
+            <Edge From="5" To="11" Label="Source1" />
+            <Edge From="5" To="12" Label="Source1" />
+            <Edge From="5" To="16" Label="Source1" />
+            <Edge From="5" To="17" Label="Source1" />
+            <Edge From="6" To="7" Label="Source2" />
+            <Edge From="7" To="8" Label="Source1" />
+            <Edge From="8" To="9" Label="Source1" />
+            <Edge From="8" To="26" Label="Source1" />
+            <Edge From="9" To="10" Label="Source1" />
+            <Edge From="10" To="21" Label="Source1" />
+            <Edge From="11" To="12" Label="Source2" />
+            <Edge From="12" To="13" Label="Source1" />
+            <Edge From="13" To="14" Label="Source1" />
+            <Edge From="13" To="26" Label="Source2" />
+            <Edge From="14" To="15" Label="Source1" />
+            <Edge From="15" To="21" Label="Source2" />
+            <Edge From="16" To="17" Label="Source2" />
+            <Edge From="17" To="18" Label="Source1" />
+            <Edge From="18" To="19" Label="Source1" />
+            <Edge From="18" To="26" Label="Source3" />
+            <Edge From="19" To="20" Label="Source1" />
+            <Edge From="20" To="21" Label="Source3" />
+            <Edge From="21" To="22" Label="Source1" />
+            <Edge From="22" To="23" Label="Source1" />
+            <Edge From="23" To="24" Label="Source1" />
+            <Edge From="24" To="25" Label="Source1" />
+            <Edge From="26" To="27" Label="Source1" />
+            <Edge From="27" To="28" Label="Source1" />
+          </Edges>
+        </Workflow>
+      </Expression>
+      <Expression xsi:type="GroupWorkflow">
+        <Name>BodyCenter</Name>
+        <Workflow>
+          <Nodes>
+            <Expression xsi:type="WorkflowInput">
+              <Name>Source1</Name>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="dlc:GetBodyPart">
+                <dlc:Name>body-center</dlc:Name>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="MemberSelector">
+              <Selector>Position.X,Position.Y</Selector>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Timestamp" />
+            </Expression>
+            <Expression xsi:type="io:CsvWriter">
+              <io:FileName>savefiles\DLC-original_bodycenter.csv</io:FileName>
+              <io:Append>false</io:Append>
+              <io:Overwrite>true</io:Overwrite>
+              <io:Suffix>Timestamp</io:Suffix>
+              <io:IncludeHeader>true</io:IncludeHeader>
+            </Expression>
+            <Expression xsi:type="MemberSelector">
+              <Selector>Position.X,Position.Y</Selector>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>1</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2))/11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>3</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2)) /11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>5</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2)) /11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="Add" />
+            <Expression xsi:type="GreaterThan">
+              <Operand xsi:type="IntProperty">
+                <Value>2</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="WorkflowOutput" />
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Timestamp" />
+            </Expression>
+            <Expression xsi:type="io:CsvWriter">
+              <io:FileName>savefiles\DsitanceMoved_bodycenter.csv</io:FileName>
+              <io:Append>false</io:Append>
+              <io:Overwrite>true</io:Overwrite>
+              <io:Suffix>Timestamp</io:Suffix>
+              <io:IncludeHeader>true</io:IncludeHeader>
+            </Expression>
+          </Nodes>
+          <Edges>
+            <Edge From="0" To="1" Label="Source1" />
+            <Edge From="1" To="2" Label="Source1" />
+            <Edge From="1" To="5" Label="Source1" />
+            <Edge From="2" To="3" Label="Source1" />
+            <Edge From="3" To="4" Label="Source1" />
+            <Edge From="5" To="6" Label="Source1" />
+            <Edge From="5" To="7" Label="Source1" />
+            <Edge From="5" To="11" Label="Source1" />
+            <Edge From="5" To="12" Label="Source1" />
+            <Edge From="5" To="16" Label="Source1" />
+            <Edge From="5" To="17" Label="Source1" />
+            <Edge From="6" To="7" Label="Source2" />
+            <Edge From="7" To="8" Label="Source1" />
+            <Edge From="8" To="9" Label="Source1" />
+            <Edge From="8" To="26" Label="Source1" />
+            <Edge From="9" To="10" Label="Source1" />
+            <Edge From="10" To="21" Label="Source1" />
+            <Edge From="11" To="12" Label="Source2" />
+            <Edge From="12" To="13" Label="Source1" />
+            <Edge From="13" To="14" Label="Source1" />
+            <Edge From="13" To="26" Label="Source2" />
+            <Edge From="14" To="15" Label="Source1" />
+            <Edge From="15" To="21" Label="Source2" />
+            <Edge From="16" To="17" Label="Source2" />
+            <Edge From="17" To="18" Label="Source1" />
+            <Edge From="18" To="19" Label="Source1" />
+            <Edge From="18" To="26" Label="Source3" />
+            <Edge From="19" To="20" Label="Source1" />
+            <Edge From="20" To="21" Label="Source3" />
+            <Edge From="21" To="22" Label="Source1" />
+            <Edge From="22" To="23" Label="Source1" />
+            <Edge From="23" To="24" Label="Source1" />
+            <Edge From="24" To="25" Label="Source1" />
+            <Edge From="26" To="27" Label="Source1" />
+            <Edge From="27" To="28" Label="Source1" />
+          </Edges>
+        </Workflow>
+      </Expression>
+      <Expression xsi:type="GroupWorkflow">
+        <Name>TailBase</Name>
+        <Workflow>
+          <Nodes>
+            <Expression xsi:type="WorkflowInput">
+              <Name>Source1</Name>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="dlc:GetBodyPart">
+                <dlc:Name>Tail-base</dlc:Name>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="MemberSelector">
+              <Selector>Position.X,Position.Y</Selector>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Timestamp" />
+            </Expression>
+            <Expression xsi:type="io:CsvWriter">
+              <io:FileName>savefiles\DLC-original_tailbaase.csv</io:FileName>
+              <io:Append>false</io:Append>
+              <io:Overwrite>true</io:Overwrite>
+              <io:Suffix>Timestamp</io:Suffix>
+              <io:IncludeHeader>true</io:IncludeHeader>
+            </Expression>
+            <Expression xsi:type="MemberSelector">
+              <Selector>Position.X,Position.Y</Selector>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>1</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2))/11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>3</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2)) /11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>5</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2)) /11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="Add" />
+            <Expression xsi:type="GreaterThan">
+              <Operand xsi:type="IntProperty">
+                <Value>2</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="WorkflowOutput" />
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Timestamp" />
+            </Expression>
+            <Expression xsi:type="io:CsvWriter">
+              <io:FileName>savefiles\DsitanceMoved_tailbase.csv</io:FileName>
+              <io:Append>false</io:Append>
+              <io:Overwrite>true</io:Overwrite>
+              <io:Suffix>Timestamp</io:Suffix>
+              <io:IncludeHeader>true</io:IncludeHeader>
+            </Expression>
+          </Nodes>
+          <Edges>
+            <Edge From="0" To="1" Label="Source1" />
+            <Edge From="1" To="2" Label="Source1" />
+            <Edge From="1" To="5" Label="Source1" />
+            <Edge From="2" To="3" Label="Source1" />
+            <Edge From="3" To="4" Label="Source1" />
+            <Edge From="5" To="6" Label="Source1" />
+            <Edge From="5" To="7" Label="Source1" />
+            <Edge From="5" To="11" Label="Source1" />
+            <Edge From="5" To="12" Label="Source1" />
+            <Edge From="5" To="16" Label="Source1" />
+            <Edge From="5" To="17" Label="Source1" />
+            <Edge From="6" To="7" Label="Source2" />
+            <Edge From="7" To="8" Label="Source1" />
+            <Edge From="8" To="9" Label="Source1" />
+            <Edge From="8" To="26" Label="Source1" />
+            <Edge From="9" To="10" Label="Source1" />
+            <Edge From="10" To="21" Label="Source1" />
+            <Edge From="11" To="12" Label="Source2" />
+            <Edge From="12" To="13" Label="Source1" />
+            <Edge From="13" To="14" Label="Source1" />
+            <Edge From="13" To="26" Label="Source2" />
+            <Edge From="14" To="15" Label="Source1" />
+            <Edge From="15" To="21" Label="Source2" />
+            <Edge From="16" To="17" Label="Source2" />
+            <Edge From="17" To="18" Label="Source1" />
+            <Edge From="18" To="19" Label="Source1" />
+            <Edge From="18" To="26" Label="Source3" />
+            <Edge From="19" To="20" Label="Source1" />
+            <Edge From="20" To="21" Label="Source3" />
+            <Edge From="21" To="22" Label="Source1" />
+            <Edge From="22" To="23" Label="Source1" />
+            <Edge From="23" To="24" Label="Source1" />
+            <Edge From="24" To="25" Label="Source1" />
+            <Edge From="26" To="27" Label="Source1" />
+            <Edge From="27" To="28" Label="Source1" />
+          </Edges>
+        </Workflow>
+      </Expression>
+      <Expression xsi:type="GroupWorkflow">
+        <Name>Tail-middle</Name>
+        <Workflow>
+          <Nodes>
+            <Expression xsi:type="WorkflowInput">
+              <Name>Source1</Name>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="dlc:GetBodyPart">
+                <dlc:Name>Tail-middle</dlc:Name>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="MemberSelector">
+              <Selector>Position.X,Position.Y</Selector>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Timestamp" />
+            </Expression>
+            <Expression xsi:type="io:CsvWriter">
+              <io:FileName>savefiles\DLC-original_tailmiddle.csv</io:FileName>
+              <io:Append>false</io:Append>
+              <io:Overwrite>true</io:Overwrite>
+              <io:Suffix>Timestamp</io:Suffix>
+              <io:IncludeHeader>true</io:IncludeHeader>
+            </Expression>
+            <Expression xsi:type="MemberSelector">
+              <Selector>Position.X,Position.Y</Selector>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>1</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2))/11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>3</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2)) /11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>5</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2)) /11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="Add" />
+            <Expression xsi:type="GreaterThan">
+              <Operand xsi:type="IntProperty">
+                <Value>2</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="WorkflowOutput" />
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Timestamp" />
+            </Expression>
+            <Expression xsi:type="io:CsvWriter">
+              <io:FileName>savefiles\DsitanceMoved_tailmiddle.csv</io:FileName>
+              <io:Append>false</io:Append>
+              <io:Overwrite>true</io:Overwrite>
+              <io:Suffix>Timestamp</io:Suffix>
+              <io:IncludeHeader>true</io:IncludeHeader>
+            </Expression>
+          </Nodes>
+          <Edges>
+            <Edge From="0" To="1" Label="Source1" />
+            <Edge From="1" To="2" Label="Source1" />
+            <Edge From="1" To="5" Label="Source1" />
+            <Edge From="2" To="3" Label="Source1" />
+            <Edge From="3" To="4" Label="Source1" />
+            <Edge From="5" To="6" Label="Source1" />
+            <Edge From="5" To="7" Label="Source1" />
+            <Edge From="5" To="11" Label="Source1" />
+            <Edge From="5" To="12" Label="Source1" />
+            <Edge From="5" To="16" Label="Source1" />
+            <Edge From="5" To="17" Label="Source1" />
+            <Edge From="6" To="7" Label="Source2" />
+            <Edge From="7" To="8" Label="Source1" />
+            <Edge From="8" To="9" Label="Source1" />
+            <Edge From="8" To="26" Label="Source1" />
+            <Edge From="9" To="10" Label="Source1" />
+            <Edge From="10" To="21" Label="Source1" />
+            <Edge From="11" To="12" Label="Source2" />
+            <Edge From="12" To="13" Label="Source1" />
+            <Edge From="13" To="14" Label="Source1" />
+            <Edge From="13" To="26" Label="Source2" />
+            <Edge From="14" To="15" Label="Source1" />
+            <Edge From="15" To="21" Label="Source2" />
+            <Edge From="16" To="17" Label="Source2" />
+            <Edge From="17" To="18" Label="Source1" />
+            <Edge From="18" To="19" Label="Source1" />
+            <Edge From="18" To="26" Label="Source3" />
+            <Edge From="19" To="20" Label="Source1" />
+            <Edge From="20" To="21" Label="Source3" />
+            <Edge From="21" To="22" Label="Source1" />
+            <Edge From="22" To="23" Label="Source1" />
+            <Edge From="23" To="24" Label="Source1" />
+            <Edge From="24" To="25" Label="Source1" />
+            <Edge From="26" To="27" Label="Source1" />
+            <Edge From="27" To="28" Label="Source1" />
+          </Edges>
+        </Workflow>
+      </Expression>
+      <Expression xsi:type="GroupWorkflow">
+        <Name>Right-Ear</Name>
+        <Workflow>
+          <Nodes>
+            <Expression xsi:type="WorkflowInput">
+              <Name>Source1</Name>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="dlc:GetBodyPart">
+                <dlc:Name>Right-Ear</dlc:Name>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="MemberSelector">
+              <Selector>Position.X,Position.Y</Selector>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Timestamp" />
+            </Expression>
+            <Expression xsi:type="io:CsvWriter">
+              <io:FileName>savefiles\DLC-original_RightEar.csv</io:FileName>
+              <io:Append>false</io:Append>
+              <io:Overwrite>true</io:Overwrite>
+              <io:Suffix>Timestamp</io:Suffix>
+              <io:IncludeHeader>true</io:IncludeHeader>
+            </Expression>
+            <Expression xsi:type="MemberSelector">
+              <Selector>Position.X,Position.Y</Selector>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>1</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2))/11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>3</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2)) /11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>5</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2)) /11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="Add" />
+            <Expression xsi:type="GreaterThan">
+              <Operand xsi:type="IntProperty">
+                <Value>2</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="WorkflowOutput" />
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Timestamp" />
+            </Expression>
+            <Expression xsi:type="io:CsvWriter">
+              <io:FileName>savefiles\DsitanceMoved_LeftEar.csv</io:FileName>
+              <io:Append>false</io:Append>
+              <io:Overwrite>true</io:Overwrite>
+              <io:Suffix>Timestamp</io:Suffix>
+              <io:IncludeHeader>true</io:IncludeHeader>
+            </Expression>
+          </Nodes>
+          <Edges>
+            <Edge From="0" To="1" Label="Source1" />
+            <Edge From="1" To="2" Label="Source1" />
+            <Edge From="1" To="5" Label="Source1" />
+            <Edge From="2" To="3" Label="Source1" />
+            <Edge From="3" To="4" Label="Source1" />
+            <Edge From="5" To="6" Label="Source1" />
+            <Edge From="5" To="7" Label="Source1" />
+            <Edge From="5" To="11" Label="Source1" />
+            <Edge From="5" To="12" Label="Source1" />
+            <Edge From="5" To="16" Label="Source1" />
+            <Edge From="5" To="17" Label="Source1" />
+            <Edge From="6" To="7" Label="Source2" />
+            <Edge From="7" To="8" Label="Source1" />
+            <Edge From="8" To="9" Label="Source1" />
+            <Edge From="8" To="26" Label="Source1" />
+            <Edge From="9" To="10" Label="Source1" />
+            <Edge From="10" To="21" Label="Source1" />
+            <Edge From="11" To="12" Label="Source2" />
+            <Edge From="12" To="13" Label="Source1" />
+            <Edge From="13" To="14" Label="Source1" />
+            <Edge From="13" To="26" Label="Source2" />
+            <Edge From="14" To="15" Label="Source1" />
+            <Edge From="15" To="21" Label="Source2" />
+            <Edge From="16" To="17" Label="Source2" />
+            <Edge From="17" To="18" Label="Source1" />
+            <Edge From="18" To="19" Label="Source1" />
+            <Edge From="18" To="26" Label="Source3" />
+            <Edge From="19" To="20" Label="Source1" />
+            <Edge From="20" To="21" Label="Source3" />
+            <Edge From="21" To="22" Label="Source1" />
+            <Edge From="22" To="23" Label="Source1" />
+            <Edge From="23" To="24" Label="Source1" />
+            <Edge From="24" To="25" Label="Source1" />
+            <Edge From="26" To="27" Label="Source1" />
+            <Edge From="27" To="28" Label="Source1" />
+          </Edges>
+        </Workflow>
+      </Expression>
+      <Expression xsi:type="GroupWorkflow">
+        <Name>Left-Ear</Name>
+        <Workflow>
+          <Nodes>
+            <Expression xsi:type="WorkflowInput">
+              <Name>Source1</Name>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="dlc:GetBodyPart">
+                <dlc:Name>Left-Ear</dlc:Name>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="MemberSelector">
+              <Selector>Position.X,Position.Y</Selector>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Timestamp" />
+            </Expression>
+            <Expression xsi:type="io:CsvWriter">
+              <io:FileName>savefiles\DLC-original_LeftEar.csv</io:FileName>
+              <io:Append>false</io:Append>
+              <io:Overwrite>true</io:Overwrite>
+              <io:Suffix>Timestamp</io:Suffix>
+              <io:IncludeHeader>true</io:IncludeHeader>
+            </Expression>
+            <Expression xsi:type="MemberSelector">
+              <Selector>Position.X,Position.Y</Selector>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>1</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2))/11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>3</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2)) /11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Skip">
+                <rx:Count>5</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>DistanceMoved</scr:Name>
+              <scr:Description />
+              <scr:Expression>Math.sqrt(Math.Pow(item1.item1-item2.item1,2)+Math.Pow(item1.item2-item2.item2,2)) /11</scr:Expression>
+            </Expression>
+            <Expression xsi:type="LessThan">
+              <Operand xsi:type="FloatProperty">
+                <Value>0.1</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="Add" />
+            <Expression xsi:type="GreaterThan">
+              <Operand xsi:type="IntProperty">
+                <Value>2</Value>
+              </Operand>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Expression>Convert.ToInt32(it)
+</scr:Expression>
+            </Expression>
+            <Expression xsi:type="WorkflowOutput" />
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Timestamp" />
+            </Expression>
+            <Expression xsi:type="io:CsvWriter">
+              <io:FileName>savefiles\DsitanceMoved_DLC-original_LeftEar.csv</io:FileName>
+              <io:Append>false</io:Append>
+              <io:Overwrite>true</io:Overwrite>
+              <io:Suffix>Timestamp</io:Suffix>
+              <io:IncludeHeader>true</io:IncludeHeader>
+            </Expression>
+          </Nodes>
+          <Edges>
+            <Edge From="0" To="1" Label="Source1" />
+            <Edge From="1" To="2" Label="Source1" />
+            <Edge From="1" To="5" Label="Source1" />
+            <Edge From="2" To="3" Label="Source1" />
+            <Edge From="3" To="4" Label="Source1" />
+            <Edge From="5" To="6" Label="Source1" />
+            <Edge From="5" To="7" Label="Source1" />
+            <Edge From="5" To="11" Label="Source1" />
+            <Edge From="5" To="12" Label="Source1" />
+            <Edge From="5" To="16" Label="Source1" />
+            <Edge From="5" To="17" Label="Source1" />
+            <Edge From="6" To="7" Label="Source2" />
+            <Edge From="7" To="8" Label="Source1" />
+            <Edge From="8" To="9" Label="Source1" />
+            <Edge From="8" To="26" Label="Source1" />
+            <Edge From="9" To="10" Label="Source1" />
+            <Edge From="10" To="21" Label="Source1" />
+            <Edge From="11" To="12" Label="Source2" />
+            <Edge From="12" To="13" Label="Source1" />
+            <Edge From="13" To="14" Label="Source1" />
+            <Edge From="13" To="26" Label="Source2" />
+            <Edge From="14" To="15" Label="Source1" />
+            <Edge From="15" To="21" Label="Source2" />
+            <Edge From="16" To="17" Label="Source2" />
+            <Edge From="17" To="18" Label="Source1" />
+            <Edge From="18" To="19" Label="Source1" />
+            <Edge From="18" To="26" Label="Source3" />
+            <Edge From="19" To="20" Label="Source1" />
+            <Edge From="20" To="21" Label="Source3" />
+            <Edge From="21" To="22" Label="Source1" />
+            <Edge From="22" To="23" Label="Source1" />
+            <Edge From="23" To="24" Label="Source1" />
+            <Edge From="24" To="25" Label="Source1" />
+            <Edge From="26" To="27" Label="Source1" />
+            <Edge From="27" To="28" Label="Source1" />
+          </Edges>
+        </Workflow>
+      </Expression>
+      <Expression xsi:type="Combinator">
+        <Combinator xsi:type="rx:Zip" />
+      </Expression>
+      <Expression xsi:type="Add" />
+      <Expression xsi:type="GreaterThan">
+        <Operand xsi:type="IntProperty">
+          <Value>5</Value>
+        </Operand>
+      </Expression>
+      <Expression xsi:type="Combinator">
+        <Combinator xsi:type="ard:DigitalOutput">
+          <ard:PortName>COM4</ard:PortName>
+          <ard:Pin>0</ard:Pin>
+        </Combinator>
+      </Expression>
+      <Expression xsi:type="Combinator">
+        <Combinator xsi:type="rx:Timestamp" />
+      </Expression>
+      <Expression xsi:type="io:CsvWriter">
+        <io:FileName>savefiles\TTL-FreezinzPeriod.csv</io:FileName>
+        <io:Append>false</io:Append>
+        <io:Overwrite>true</io:Overwrite>
+        <io:Suffix>Timestamp</io:Suffix>
+        <io:IncludeHeader>true</io:IncludeHeader>
+      </Expression>
+      <Expression xsi:type="SubscribeSubject">
+        <Name>Video</Name>
+      </Expression>
+      <Expression xsi:type="Disable">
+        <Builder xsi:type="Combinator">
+          <Combinator xsi:type="cv:Crop">
+            <cv:RegionOfInterest>
+              <cv:X>0</cv:X>
+              <cv:Y>0</cv:Y>
+              <cv:Width>500</cv:Width>
+              <cv:Height>480</cv:Height>
+            </cv:RegionOfInterest>
+          </Combinator>
+        </Builder>
+      </Expression>
+      <Expression xsi:type="Combinator">
+        <Combinator xsi:type="cv:VideoWriter">
+          <cv:FileName>savefiles\Video_original.avi</cv:FileName>
+          <cv:Suffix>Timestamp</cv:Suffix>
+          <cv:Buffered>true</cv:Buffered>
+          <cv:Overwrite>true</cv:Overwrite>
+          <cv:FourCC>FMP4</cv:FourCC>
+          <cv:FrameRate>30</cv:FrameRate>
+          <cv:FrameSize>
+            <cv:Width>0</cv:Width>
+            <cv:Height>0</cv:Height>
+          </cv:FrameSize>
+          <cv:ResizeInterpolation>NearestNeighbor</cv:ResizeInterpolation>
+        </Combinator>
+      </Expression>
+      <Expression xsi:type="Combinator">
+        <Combinator xsi:type="rx:Timestamp" />
+      </Expression>
+      <Expression xsi:type="io:CsvWriter">
+        <io:FileName>savefiles\Video_Original.csv</io:FileName>
+        <io:Append>false</io:Append>
+        <io:Overwrite>true</io:Overwrite>
+        <io:Suffix>Timestamp</io:Suffix>
+        <io:IncludeHeader>true</io:IncludeHeader>
+      </Expression>
+    </Nodes>
+    <Edges>
+      <Edge From="0" To="1" Label="Source1" />
+      <Edge From="1" To="2" Label="Source1" />
+      <Edge From="2" To="3" Label="Source1" />
+      <Edge From="3" To="4" Label="Source1" />
+      <Edge From="4" To="5" Label="Source1" />
+      <Edge From="5" To="6" Label="Source1" />
+      <Edge From="5" To="7" Label="Source1" />
+      <Edge From="5" To="8" Label="Source1" />
+      <Edge From="5" To="9" Label="Source1" />
+      <Edge From="5" To="10" Label="Source1" />
+      <Edge From="5" To="11" Label="Source1" />
+      <Edge From="6" To="12" Label="Source1" />
+      <Edge From="7" To="12" Label="Source2" />
+      <Edge From="8" To="12" Label="Source3" />
+      <Edge From="9" To="12" Label="Source4" />
+      <Edge From="10" To="12" Label="Source5" />
+      <Edge From="11" To="12" Label="Source6" />
+      <Edge From="12" To="13" Label="Source1" />
+      <Edge From="13" To="14" Label="Source1" />
+      <Edge From="14" To="15" Label="Source1" />
+      <Edge From="15" To="16" Label="Source1" />
+      <Edge From="16" To="17" Label="Source1" />
+      <Edge From="18" To="19" Label="Source1" />
+      <Edge From="19" To="20" Label="Source1" />
+      <Edge From="19" To="21" Label="Source1" />
+      <Edge From="21" To="22" Label="Source1" />
+    </Edges>
+  </Workflow>
+</WorkflowBuilder>
